@@ -30,11 +30,13 @@ jobs:
         run: |
           Start-Process ssh -ArgumentList "-o StrictHostKeyChecking=no -p 443 -R0:localhost:3389 a.pinggy.io" -RedirectStandardOutput "pinggy.log"
           
-          Start-Sleep -Seconds 10
+          # Jeda 15 detik agar koneksi benar-benar terbentuk
+          Start-Sleep -Seconds 15
           
           Write-Host "==========================================" -ForegroundColor Green
-          Write-Host "LOG KONEKSI PINGGY:" -ForegroundColor Yellow
-          Get-Content pinggy.log | Select-String "tcp://"
+          Write-Host "LOG LENGKAP PINGGY:" -ForegroundColor Yellow
+          Get-Content pinggy.log
+          Write-Host "==========================================" -ForegroundColor Green
           Write-Host "USERNAME : runneradmin" -ForegroundColor Yellow
           Write-Host "PASSWORD : P@ssword1234" -ForegroundColor Yellow
           Write-Host "==========================================" -ForegroundColor Green
