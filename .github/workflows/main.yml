@@ -7,7 +7,7 @@ on:
         description: 'Masukkan Ngrok Authtoken Anda'
         required: true
       rdp_password:
-        description: 'Password untuk Login RDP (minimal 8 karakter)'
+        description: 'Password Login RDP'
         required: true
         default: 'P@ssword1234'
 
@@ -28,26 +28,31 @@ jobs:
           $user = [ADSI]"WinNT://$($net.ComputerName)/runneradmin"
           $user.SetPassword("${{ github.event.inputs.rdp_password }}")
 
-      - name: Install Ngrok
-        shell: powershell
-        run: |
-          choco install ngrok --confirm --no-progress
+      - name: Start Ngrok Tunnel
+        uses: alerque/setup-ngrok@v1
 
-      - name: Start Ngrok & Show Info
+      - name: Create RDP Tunnel
         shell: powershell
         run: |
           ngrok config add-authtoken ${{ github.event.inputs.ngrok_auth_token }}
-          Start-Process -FilePath "ngrok" -ArgumentList "tcp 3389"
+          Start-Process ngrok -ArgumentList "tcp 3389 --log=stdout" -RedirectStandardOutput ngrok.log
           
-          # Menunggu Ngrok benar-benar siap
-          Start-Sleep -Seconds 12
+          # Tunggu proses inisialisasi
+          Start-Sleep -Seconds 10
           
-          $response = Invoke-RestMethod -Uri "http://localhost:4040/api/tunnels"
-          $public_url = $response.tunnels[0].public_url
+          # Ambil URL dari log ngrok langsung
+          $log = Get-Content ngrok.log -ErrorAction SilentlyContinue
+          $url = ($log | Select-String -Pattern "url=tcp://(.*)").Matches.Value
           
           Write-Host "==========================================" -ForegroundColor Green
-          Write-Host "ALAMAT RDP ANDA: $public_url" -ForegroundColor Yellow
-          Write-Host "USERNAME: runneradmin" -ForegroundColor Yellow
+          if ($url) {
+            Write-Host "KONEKSI RDP BERHASIL!" -ForegroundColor Green
+            Write-Host "ALAMAT RDP : $url" -ForegroundColor Yellow
+          } else {
+            Write-Host "Gagal mengambil URL dari Log. Coba cek dashbaord Ngrok Anda." -ForegroundColor Red
+          }
+          Write-Host "USERNAME   : runneradmin" -ForegroundColor Yellow
+          Write-Host "PASSWORD   : ${{ github.event.inputs.rdp_password }}" -ForegroundColor Yellow
           Write-Host "==========================================" -ForegroundColor Green
 
       - name: Keep Alive
