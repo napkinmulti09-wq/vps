@@ -13,7 +13,7 @@ jobs:
     steps:
       - name: Download & Install Chrome Remote Desktop
         run: |
-          Invoke-WebRequest -Uri [https://dl.google.com/edgedl/chrome-remote-desktop/chromeremotedesktophost.msi](https://dl.google.com/edgedl/chrome-remote-desktop/chromeremotedesktophost.msi)
+          Invoke-WebRequest -Uri https://dl.google.com/edgedl/chrome-remote-desktop/chromeremotedesktophost.msi](https://dl.google.com/edgedl/chrome-remote-desktop/chromeremotedesktophost.msi
           Start-Process msiexec.exe -Wait -ArgumentList '/i chromeremotedesktophost.msi /quiet'
 
       - name: Setup Chrome Remote Desktop
