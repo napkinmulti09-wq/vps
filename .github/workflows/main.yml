@@ -1,7 +1,11 @@
-name: Windows RDP via Pinggy
+name: Windows RDP via Localtonet
 
 on:
   workflow_dispatch:
+    inputs:
+      localtonet_token:
+        description: 'Masukkan AuthToken Localtonet Anda'
+        required: true
 
 jobs:
   build:
@@ -20,30 +24,23 @@ jobs:
           $user = [ADSI]"WinNT://$($net.ComputerName)/runneradmin"
           $user.SetPassword("P@ssword1234")
 
-      - name: Install OpenSSH Client
+      - name: Install & Run Localtonet
         shell: powershell
         run: |
-          Add-WindowsCapability -Online -Name OpenSSH.Client~~~~0.0.1.0
-
-      - name: Start Pinggy Tunnel
-        shell: powershell
-        run: |
-          Start-Process ssh -ArgumentList "-o StrictHostKeyChecking=no -p 443 -R0:localhost:3389 a.pinggy.io" -RedirectStandardOutput "pinggy.log"
-          
-          # Jeda 15 detik agar koneksi benar-benar terbentuk
-          Start-Sleep -Seconds 15
-          
-          Write-Host "==========================================" -ForegroundColor Green
-          Write-Host "LOG LENGKAP PINGGY:" -ForegroundColor Yellow
-          Get-Content pinggy.log
-          Write-Host "==========================================" -ForegroundColor Green
-          Write-Host "USERNAME : runneradmin" -ForegroundColor Yellow
-          Write-Host "PASSWORD : P@ssword1234" -ForegroundColor Yellow
-          Write-Host "==========================================" -ForegroundColor Green
+          Invoke-WebRequest -Uri "https://localtonet.com/download/localtonet-win-x64.zip" -OutFile "localtonet.zip"
+          Expand-Archive -Path "localtonet.zip" -DestinationPath "."
+          Start-Process -FilePath ".\localtonet.exe" -ArgumentList "authtoken ${{ github.event.inputs.localtonet_token }}"
 
       - name: Keep Alive
         shell: powershell
         run: |
+          Write-Host "==========================================" -ForegroundColor Green
+          Write-Host "RDP BERHASIL DIAKTIFKAN!" -ForegroundColor Green
+          Write-Host "USERNAME : runneradmin" -ForegroundColor Yellow
+          Write-Host "PASSWORD : P@ssword1234" -ForegroundColor Yellow
+          Write-Host "Cek Alamat/IP di Dashboard Localtonet Anda" -ForegroundColor Cyan
+          Write-Host "==========================================" -ForegroundColor Green
+          
           while ($true) {
             Start-Sleep -Seconds 300
           }
