@@ -1,15 +1,7 @@
-name: Windows RDP via Ngrok
+name: Windows RDP via Pinggy
 
 on:
   workflow_dispatch:
-    inputs:
-      ngrok_auth_token:
-        description: 'Masukkan Ngrok Authtoken Anda'
-        required: true
-      rdp_password:
-        description: 'Password Login RDP'
-        required: true
-        default: 'P@ssword1234'
 
 jobs:
   build:
@@ -26,20 +18,26 @@ jobs:
         run: |
           $net = new-object -com WScript.Network
           $user = [ADSI]"WinNT://$($net.ComputerName)/runneradmin"
-          $user.SetPassword("${{ github.event.inputs.rdp_password }}")
+          $user.SetPassword("P@ssword1234")
 
-      - name: Install & Run Ngrok
+      - name: Install OpenSSH Client
         shell: powershell
         run: |
-          choco install ngrok --confirm --no-progress
-          ngrok config add-authtoken ${{ github.event.inputs.ngrok_auth_token }}
+          Add-WindowsCapability -Online -Name OpenSSH.Client~~~~0.0.1.0
+
+      - name: Start Pinggy Tunnel
+        shell: powershell
+        run: |
+          Start-Process ssh -ArgumentList "-o StrictHostKeyChecking=no -p 443 -R0:localhost:3389 a.pinggy.io" -RedirectStandardOutput "pinggy.log"
           
-          # Jalankan ngrok dan simpan output log
-          Start-Process ngrok -ArgumentList "tcp 3389 --log=stdout" -RedirectStandardOutput "ngrok.log"
           Start-Sleep -Seconds 10
           
-          # Tampilkan log di konsol GitHub
-          Get-Content ngrok.log
+          Write-Host "==========================================" -ForegroundColor Green
+          Write-Host "LOG KONEKSI PINGGY:" -ForegroundColor Yellow
+          Get-Content pinggy.log | Select-String "tcp://"
+          Write-Host "USERNAME : runneradmin" -ForegroundColor Yellow
+          Write-Host "PASSWORD : P@ssword1234" -ForegroundColor Yellow
+          Write-Host "==========================================" -ForegroundColor Green
 
       - name: Keep Alive
         shell: powershell
