@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       crd_code:
-        description: 'Kode Otorisasi dari Chrome Remote Desktop'
+        description: 'Perintah Otorisasi PowerShell dari Chrome Remote Desktop'
         required: true
 
 jobs:
@@ -12,17 +12,20 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Download & Install Chrome Remote Desktop
+        shell: powershell
         run: |
-          Invoke-WebRequest -Uri https://dl.google.com/edgedl/chrome-remote-desktop/chromeremotedesktophost.msi](https://dl.google.com/edgedl/chrome-remote-desktop/chromeremotedesktophost.msi
-          Start-Process msiexec.exe -Wait -ArgumentList '/i chromeremotedesktophost.msi /quiet'
+          $url = "https://dl.google.com/edgedl/chrome-remote-desktop/chromeremotedesktophost.msi"
+          Invoke-WebRequest -Uri $url -OutFile "chromeremotedesktophost.msi"
+          Start-Process msiexec.exe -ArgumentList '/i chromeremotedesktophost.msi /quiet /norestart' -Wait
 
       - name: Setup Chrome Remote Desktop
+        shell: powershell
         run: |
-          ${{ github.event.inputs.crd_code }} -pin=123456
+          ${{ github.event.inputs.crd_code }} --pin=123456
 
       - name: Keep Alive
+        shell: powershell
         run: |
-          $loop = $true
-          while($loop) {
+          while ($true) {
             Start-Sleep -Seconds 300
           }
