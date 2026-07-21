@@ -1,27 +1,51 @@
-name: Windows RDP Environment
+name: Windows RDP via Ngrok
 
 on:
   workflow_dispatch:
     inputs:
-      crd_code:
-        description: 'Perintah Otorisasi PowerShell dari Chrome Remote Desktop'
+      ngrok_auth_token:
+        description: 'Masukkan Ngrok Authtoken Anda'
         required: true
+      rdp_password:
+        description: 'Password untuk Login RDP (minimal 8 karakter)'
+        required: true
+        default: 'P@ssword1234'
 
 jobs:
   build:
     runs-on: windows-latest
     steps:
-      - name: Download & Install Chrome Remote Desktop
+      - name: Enable RDP
         shell: powershell
         run: |
-          $url = "https://dl.google.com/edgedl/chrome-remote-desktop/chromeremotedesktophost.msi"
-          Invoke-WebRequest -Uri $url -OutFile "chromeremotedesktophost.msi"
-          Start-Process msiexec.exe -ArgumentList '/i chromeremotedesktophost.msi /quiet /norestart' -Wait
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
+          Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
 
-      - name: Setup Chrome Remote Desktop
+      - name: Set Admin Password
         shell: powershell
         run: |
-          ${{ github.event.inputs.crd_code }} --pin=123456
+          $net = new-object -com WScript.Network
+          $user = [ADSI]"WinNT://$($net.ComputerName)/runneradmin"
+          $user.SetPassword("${{ github.event.inputs.rdp_password }}")
+
+      - name: Install & Run Ngrok
+        shell: powershell
+        run: |
+          Invoke-WebRequest -Uri "https://bin.equinox.io/c/b3M412wjqqc/ngrok-v3-stable-windows-amd64.zip" -OutFile "ngrok.zip"
+          Expand-Archive -Path "ngrok.zip" -DestinationPath "."
+          .\ngrok.exe config add-authtoken ${{ github.event.inputs.ngrok_auth_token }}
+          Start-Process -FilePath ".\ngrok.exe" -ArgumentList "tcp 3389"
+
+      - name: Get Connection Info
+        shell: powershell
+        run: |
+          Start-Sleep -Seconds 5
+          $response = Invoke-RestMethod -Uri "http://localhost:4040/api/tunnels"
+          $public_url = $response.tunnels[0].public_url
+          Write-Host "==========================================" -ForegroundColor Green
+          Write-Host "ALAMAT RDP ANDA: $public_url" -ForegroundColor Yellow
+          Write-Host "USERNAME: runneradmin" -ForegroundColor Yellow
+          Write-Host "==========================================" -ForegroundColor Green
 
       - name: Keep Alive
         shell: powershell
