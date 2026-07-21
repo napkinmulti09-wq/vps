@@ -1,4 +1,4 @@
-name: Windows RDP via Bore
+name: Windows RDP via Serveo
 
 on:
   workflow_dispatch:
@@ -20,26 +20,18 @@ jobs:
           $user = [ADSI]"WinNT://$($net.ComputerName)/runneradmin"
           $user.SetPassword("P@ssword1234")
 
-      - name: Start Bore Tunnel
+      - name: Start Serveo Tunnel
         shell: powershell
         run: |
-          # Download aplikasi Bore
-          Invoke-WebRequest -Uri "https://github.com/ekzhang/bore/releases/download/v0.5.1/bore-v0.5.1-x86_64-pc-windows-msvc.zip" -OutFile "bore.zip"
-          Expand-Archive -Path "bore.zip" -DestinationPath "."
+          # Jalankan SSH tunnel ke Serveo
+          $process = Start-Process ssh -ArgumentList "-o StrictHostKeyChecking=no -R 0:localhost:3389 serveo.net" -RedirectStandardOutput "serveo.log" -PassThru
           
-          # Jalankan tunnel
-          Start-Process -FilePath ".\bore.exe" -ArgumentList "local 3389 --to bore.pub" -RedirectStandardOutput "bore.log" -RedirectStandardError "bore_err.log"
-          
-          # Tunggu koneksi stabil
+          # Tunggu proses mengumpulkan log
           Start-Sleep -Seconds 10
           
           Write-Host "==========================================" -ForegroundColor Green
-          Write-Host "ALAMAT RDP ANDA:" -ForegroundColor Yellow
-          
-          # Menampilkan Port yang didapat
-          $log = Get-Content bore.log
-          $log | Select-String "listening at bore.pub"
-          
+          Write-Host "ALAMAT RDP SERVEO:" -ForegroundColor Yellow
+          Get-Content serveo.log | Select-String "Forwarding TCP"
           Write-Host "==========================================" -ForegroundColor Green
           Write-Host "USERNAME : runneradmin" -ForegroundColor Yellow
           Write-Host "PASSWORD : P@ssword1234" -ForegroundColor Yellow
