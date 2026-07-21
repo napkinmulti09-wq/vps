@@ -1,11 +1,7 @@
-name: Windows RDP via Localtonet
+name: Windows RDP via Bore
 
 on:
   workflow_dispatch:
-    inputs:
-      localtonet_token:
-        description: 'Masukkan AuthToken Localtonet Anda'
-        required: true
 
 jobs:
   build:
@@ -24,23 +20,34 @@ jobs:
           $user = [ADSI]"WinNT://$($net.ComputerName)/runneradmin"
           $user.SetPassword("P@ssword1234")
 
-      - name: Install & Run Localtonet
+      - name: Start Bore Tunnel
         shell: powershell
         run: |
-          Invoke-WebRequest -Uri "https://localtonet.com/download/localtonet-win-x64.zip" -OutFile "localtonet.zip"
-          Expand-Archive -Path "localtonet.zip" -DestinationPath "."
-          Start-Process -FilePath ".\localtonet.exe" -ArgumentList "authtoken ${{ github.event.inputs.localtonet_token }}"
+          # Download aplikasi Bore
+          Invoke-WebRequest -Uri "https://github.com/ekzhang/bore/releases/download/v0.5.1/bore-v0.5.1-x86_64-pc-windows-msvc.zip" -OutFile "bore.zip"
+          Expand-Archive -Path "bore.zip" -DestinationPath "."
+          
+          # Jalankan tunnel
+          Start-Process -FilePath ".\bore.exe" -ArgumentList "local 3389 --to bore.pub" -RedirectStandardOutput "bore.log" -RedirectStandardError "bore_err.log"
+          
+          # Tunggu koneksi stabil
+          Start-Sleep -Seconds 10
+          
+          Write-Host "==========================================" -ForegroundColor Green
+          Write-Host "ALAMAT RDP ANDA:" -ForegroundColor Yellow
+          
+          # Menampilkan Port yang didapat
+          $log = Get-Content bore.log
+          $log | Select-String "listening at bore.pub"
+          
+          Write-Host "==========================================" -ForegroundColor Green
+          Write-Host "USERNAME : runneradmin" -ForegroundColor Yellow
+          Write-Host "PASSWORD : P@ssword1234" -ForegroundColor Yellow
+          Write-Host "==========================================" -ForegroundColor Green
 
       - name: Keep Alive
         shell: powershell
         run: |
-          Write-Host "==========================================" -ForegroundColor Green
-          Write-Host "RDP BERHASIL DIAKTIFKAN!" -ForegroundColor Green
-          Write-Host "USERNAME : runneradmin" -ForegroundColor Yellow
-          Write-Host "PASSWORD : P@ssword1234" -ForegroundColor Yellow
-          Write-Host "Cek Alamat/IP di Dashboard Localtonet Anda" -ForegroundColor Cyan
-          Write-Host "==========================================" -ForegroundColor Green
-          
           while ($true) {
             Start-Sleep -Seconds 300
           }
