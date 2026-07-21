@@ -1,7 +1,11 @@
-name: Windows RDP via Serveo
+name: Windows RDP via Tailscale
 
 on:
   workflow_dispatch:
+    inputs:
+      tailscale_authkey:
+        description: 'Masukkan Tailscale Auth Key'
+        required: true
 
 jobs:
   build:
@@ -20,29 +24,26 @@ jobs:
           $user = [ADSI]"WinNT://$($net.ComputerName)/runneradmin"
           $user.SetPassword("P@ssword1234")
 
-      - name: Start Serveo Tunnel
+      - name: Connect to Tailscale
         shell: powershell
         run: |
-          # Buat Port acak antara 10000-50000
-          $port = Get-Random -Minimum 10000 -Maximum 50000
-          Write-Host "Mencoba membuat tunnel pada port: $port"
+          # Download & Install Tailscale
+          Invoke-WebRequest -Uri "https://pkgs.tailscale.com/stable/tailscale-setup-latest.exe" -OutFile "tailscale-setup.exe"
+          Start-Process -FilePath ".\tailscale-setup.exe" -ArgumentList "/quiet" -Wait
           
-          # Jalankan SSH tunnel ke Serveo dengan port spesifik
-          Start-Process ssh -ArgumentList "-o StrictHostKeyChecking=no -R ${port}:localhost:3389 serveo.net" -RedirectStandardOutput "serveo.log"
-          
-          Start-Sleep -Seconds 10
-          
-          Write-Host "==========================================" -ForegroundColor Green
-          Write-Host "ALAMAT RDP ANDA:" -ForegroundColor Yellow
-          Write-Host "serveo.net:$port" -ForegroundColor Cyan
-          Write-Host "==========================================" -ForegroundColor Green
-          Write-Host "USERNAME : runneradmin" -ForegroundColor Yellow
-          Write-Host "PASSWORD : P@ssword1234" -ForegroundColor Yellow
-          Write-Host "==========================================" -ForegroundColor Green
+          # Hubungkan ke akun Tailscale Anda
+          & "C:\Program Files\Tailscale\tailscale.exe" up --authkey ${{ github.event.inputs.tailscale_authkey }}
 
       - name: Keep Alive
         shell: powershell
         run: |
+          Write-Host "==========================================" -ForegroundColor Green
+          Write-Host "RDP BERHASIL TERHUBUNG KE TAILSCALE!" -ForegroundColor Green
+          Write-Host "Cek IP RDP di Aplikasi Tailscale HP Anda" -ForegroundColor Cyan
+          Write-Host "USERNAME : runneradmin" -ForegroundColor Yellow
+          Write-Host "PASSWORD : P@ssword1234" -ForegroundColor Yellow
+          Write-Host "==========================================" -ForegroundColor Green
+          
           while ($true) {
             Start-Sleep -Seconds 300
           }
