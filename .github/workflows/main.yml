@@ -23,15 +23,18 @@ jobs:
       - name: Start Serveo Tunnel
         shell: powershell
         run: |
-          # Jalankan SSH tunnel ke Serveo
-          $process = Start-Process ssh -ArgumentList "-o StrictHostKeyChecking=no -R 0:localhost:3389 serveo.net" -RedirectStandardOutput "serveo.log" -PassThru
+          # Buat Port acak antara 10000-50000
+          $port = Get-Random -Minimum 10000 -Maximum 50000
+          Write-Host "Mencoba membuat tunnel pada port: $port"
           
-          # Tunggu proses mengumpulkan log
+          # Jalankan SSH tunnel ke Serveo dengan port spesifik
+          Start-Process ssh -ArgumentList "-o StrictHostKeyChecking=no -R ${port}:localhost:3389 serveo.net" -RedirectStandardOutput "serveo.log"
+          
           Start-Sleep -Seconds 10
           
           Write-Host "==========================================" -ForegroundColor Green
-          Write-Host "ALAMAT RDP SERVEO:" -ForegroundColor Yellow
-          Get-Content serveo.log | Select-String "Forwarding TCP"
+          Write-Host "ALAMAT RDP ANDA:" -ForegroundColor Yellow
+          Write-Host "serveo.net:$port" -ForegroundColor Cyan
           Write-Host "==========================================" -ForegroundColor Green
           Write-Host "USERNAME : runneradmin" -ForegroundColor Yellow
           Write-Host "PASSWORD : P@ssword1234" -ForegroundColor Yellow
