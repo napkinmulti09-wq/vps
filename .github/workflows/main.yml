@@ -28,13 +28,16 @@ jobs:
           $user = [ADSI]"WinNT://$($net.ComputerName)/runneradmin"
           $user.SetPassword("${{ github.event.inputs.rdp_password }}")
 
-      - name: Install & Run Ngrok
+      - name: Install Ngrok
         shell: powershell
         run: |
-          Invoke-WebRequest -Uri "https://bin.equinox.io/c/b3M412wjqqc/ngrok-v3-stable-windows-amd64.zip" -OutFile "ngrok.zip"
-          Expand-Archive -Path "ngrok.zip" -DestinationPath "."
-          .\ngrok.exe config add-authtoken ${{ github.event.inputs.ngrok_auth_token }}
-          Start-Process -FilePath ".\ngrok.exe" -ArgumentList "tcp 3389"
+          choco install ngrok --confirm --no-progress
+
+      - name: Start Ngrok Tunnel
+        shell: powershell
+        run: |
+          ngrok config add-authtoken ${{ github.event.inputs.ngrok_auth_token }}
+          Start-Process -FilePath "ngrok" -ArgumentList "tcp 3389"
 
       - name: Get Connection Info
         shell: powershell
